@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Helm — AI Project Management Assistant</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2029;
+    --panel-2: #222a35;
+    --border: #2e3744;
+    --accent: #4f9cf9;
+    --accent-2: #6ee7b7;
+    --text: #e6edf3;
+    --muted: #8b97a7;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --ok: #34d399;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #0f1419; font-size: 18px;
+  }
+  .brand h1 { font-size: 18px; margin: 0; }
+  .brand p { font-size: 12px; margin: 0; color: var(--muted); }
+  .settings-btn {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  }
+  .settings-btn:hover { border-color: var(--accent); }
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 0; height: calc(100vh - 67px); }
+  .left { border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; background: var(--panel); }
+  .right { padding: 24px; overflow-y: auto; }
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+  textarea, input, select {
+    width: 100%; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 13px;
+    font-family: inherit; resize: vertical;
+  }
+  textarea { min-height: 320px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); }
+  .row { margin-bottom: 16px; }
+  .btn-group { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .ghost-btn {
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 7px; cursor: pointer; font-size: 12px;
+  }
+  .ghost-btn:hover { color: var(--text); border-color: var(--accent); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .action-btn {
+    background: linear-gradient(135deg, var(--accent), #3b82f6);
+    color: #fff; border: none; padding: 14px 10px; border-radius: 10px;
+    cursor: pointer; font-size: 13px; font-weight: 600; text-align: center;
+    transition: transform .08s ease;
+  }
+  .action-btn:hover { transform: translateY(-1px); }
+  .action-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .action-btn .ico { display: block; font-size: 20px; margin-bottom: 4px; }
+  .output {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; min-height: 400px;
+  }
+  .output h2 { margin-top: 0; font-size: 16px; color: var(--accent); }
+  .placeholder { color: var(--muted); text-align: center; padding: 80px 20px; }
+  .placeholder .big { font-size: 40px; margin-bottom: 12px; }
+  .render h1, .render h2, .render h3 { color: var(--text); }
+  .render h2 { font-size: 17px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-top: 24px; }
+  .render h3 { font-size: 14px; color: var(--accent-2); margin-top: 18px; }
+  .render table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  .render th, .render td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+  .render th { background: var(--panel-2); }
+  .render code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-size: 12px; }
+  .render ul, .render ol { padding-left: 22px; }
+  .render li { margin: 4px 0; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .b-high { background: rgba(248,113,113,.18); color: var(--danger); }
+  .b-med { background: rgba(251,191,36,.18); color: var(--warn); }
+  .b-low { background: rgba(52,211,153,.18); color: var(--ok); }
+  .spinner {
+    width: 22px; height: 22px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .8s linear infinite; display: inline-block; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none;
+    align-items: center; justify-content: center; z-index: 50;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px; width: 460px; max-width: 90vw;
+  }
+  .modal h3 { margin-top: 0; }
+  .modal .hint { font-size: 12px; color: var(--muted); margin: -2px 0 14px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+  .save-btn { background: var(--accent); color: #fff; border: none; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .dot-on { background: var(--ok); }
+  .dot-off { background: var(--danger); }
+  .keystatus { font-size: 12px; color: var(--muted); }
+  .err { color: var(--danger); font-size: 13px; padding: 12px; background: rgba(248,113,113,.1); border-radius: 8px; border: 1px solid rgba(248,113,113,.3); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">H</div>
+    <div>
+      <h1>Helm</h1>
+      <p>AI Project Management Assistant</p>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <span class="keystatus"><span id="keyDot" class="status-dot dot-off"></span><span id="keyLabel">No API key</span></span>
+    <button class="settings-btn" onclick="openSettings()">Settings</button>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="left">
+    <div class="row">
+      <label>Project Data</label>
+      <div class="btn-group">
+        <button class="ghost-btn" onclick="loadSample()">Load sample project</button>
+        <button class="ghost-btn" onclick="clearData()">Clear</button>
+      </div>
+      <textarea id="projectData" placeholder="Paste your project tasks here. One task per line works best. Include task name, owner, status, due date, and any notes. CSV or freeform both work."></textarea>
+    </div>
+    <div class="row">
+      <label>Optional Context (deadline, goals, audience)</label>
+      <input id="context" placeholder="e.g. Board review Friday. Audience is executives.">
+    </div>
+  </div>
+
+  <div class="right">
+    <label>Run an assistant function</label>
+    <div class="actions">
+      <button class="action-btn" id="btn-status" onclick="run('status')">
+        <span class="ico">&#9783;</span>Status Report
+      </button>
+      <button class="action-btn" id="btn-priority" onclick="run('priority')">
+        <span class="ico">&#9776;</span>Prioritize Tasks
+      </button>
+      <button class="action-btn" id="btn-timeline" onclick="run('timeline')">
+        <span class="ico">&#9202;</span>Timeline Update
+      </button>
+    </div>
+
+    <div class="output" id="output">
+      <div class="placeholder">
+        <div class="big">&#9784;</div>
+        <div>Load the sample project or paste your own, set your API key, then run a function.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <h3>Settings</h3>
+    <p class="hint">Your key is stored only in this browser (localStorage) and sent directly to the provider. Nothing passes through any other server.</p>
+    <div class="row">
+      <label>Provider</label>
+      <select id="provider" onchange="syncModelPlaceholder()">
+        <option value="demo">Offline Demo (no key needed)</option>
+        <option value="openai">OpenAI (ChatGPT)</option>
+        <option value="gemini">Google Gemini</option>
+        <option value="anthropic">Anthropic (Claude)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Model</label>
+      <input id="model" placeholder="gpt-4o-mini">
+    </div>
+    <div class="row">
+      <label>API Key</label>
+      <input id="apiKey" type="password" placeholder="Paste your API key">
+    </div>
+    <div class="modal-actions">
+      <button class="ghost-btn" onclick="closeSettings()">Cancel</button>
+      <button class="save-btn" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Persistence ----------
+const store = {
+  get k(){ return localStorage.getItem('helm_key') || ''; },
+  set k(v){ localStorage.setItem('helm_key', v); },
+  get provider(){ return localStorage.getItem('helm_provider') || 'demo'; },
+  set provider(v){ localStorage.setItem('helm_provider', v); },
+  get model(){ return localStorage.getItem('helm_model') || ''; },
+  set model(v){ localStorage.setItem('helm_model', v); },
+  get data(){ return localStorage.getItem('helm_data') || ''; },
+  set data(v){ localStorage.setItem('helm_data', v); }
+};
+
+const DEFAULT_MODELS = { demo: 'built-in', openai: 'gpt-4o-mini', gemini: 'gemini-1.5-flash', anthropic: 'claude-3-5-sonnet-20241022' };
+
+// ---------- Sample data ----------
+const SAMPLE = `Task, Owner, Status, Due Date, Notes
+Finalize equipment spec sheet, Thomas, In Progress, 2026-06-20, Waiting on motor torque numbers from engineering
+Customer site survey, Dana, Complete, 2026-06-10, Measurements confirmed
+Build inline WPL quote, Thomas, In Progress, 2026-06-19, Needs pricing approval from finance
+Software integration scoping call, Priya, Not Started, 2026-06-25, Customer ERP unknown, risk to timeline
+Order long-lead conveyor parts, Marcus, Blocked, 2026-06-16, PO held by procurement, 8 week lead time
+Draft installation schedule, Dana, Not Started, 2026-07-01, Depends on parts arrival
+Customer training plan, Priya, Not Started, 2026-07-10, Low priority until install confirmed
+Final acceptance test protocol, Thomas, Not Started, 2026-07-15, Required before sign off`;
+
+// ---------- Prompt builders ----------
+function systemPrompt(){
+  return "You are Helm, a sharp, concise project management assistant for a manufacturing sales engineering team. " +
+    "You analyze raw project task data and produce clear, decision-ready output. " +
+    "Always respond in clean Markdown. Use tables where they aid clarity. Be specific and reference task names and owners. " +
+    "Do not invent data that is not present, but you may flag where data is missing.";
+}
+
+function taskPrompt(mode, data, ctx){
+  const today = new Date().toISOString().slice(0,10);
+  const head = `Today's date is ${today}.\nProject task data:\n"""\n${data}\n"""\n` + (ctx ? `Additional context: ${ctx}\n` : '');
+  if(mode === 'status'){
+    return head + `\nProduce a STATUS REPORT with these sections:\n` +
+      `1. Executive Summary (2 to 3 sentences on overall health).\n` +
+      `2. Progress by status (a Markdown table grouping tasks: Complete, In Progress, Blocked, Not Started, with counts).\n` +
+      `3. Key Accomplishments.\n` +
+      `4. Risks and Blockers (call out anything blocked, overdue, or dependent, with the at-risk reason).\n` +
+      `5. Recommended Next Actions (3 to 5 bullet points, each with an owner).\n` +
+      `Keep it tight and executive-ready.`;
+  }
+  if(mode === 'priority'){
+    return head + `\nPRIORITIZE the tasks. Return a single Markdown table with columns: ` +
+      `Rank, Task, Owner, Priority (High/Medium/Low), Reasoning. ` +
+      `Rank by urgency (due date vs today), whether the task blocks others, and business impact. ` +
+      `Put the most urgent first. After the table, add a short "Focus this week" paragraph naming the top 3 tasks.`;
+  }
+  if(mode === 'timeline'){
+    return head + `\nProduce a TIMELINE UPDATE:\n` +
+      `1. A Markdown table with columns: Task, Owner, Original Due, Status, On Track? (Yes/At Risk/Late), Suggested Action.\n` +
+      `2. Identify any tasks that are overdue relative to today or that threaten downstream dependencies.\n` +
+      `3. Propose a revised sequence for the at-risk items, noting dependencies (e.g. installation depends on parts arrival).\n` +
+      `Be concrete about dates.`;
+  }
+}
+
+// ---------- Offline demo outputs (no key, matches the sample project) ----------
+const DEMO_OUTPUTS = {
+  status: `## Executive Summary
+The project is **on track overall** but two items threaten the install timeline: a blocked conveyor parts order with an 8 week lead time, and an unscoped software integration dependent on the customer's unknown ERP. One task is complete, three are in progress, one is blocked, and three have not started.
+
+## Progress by Status
+| Status | Count | Tasks |
+|--------|-------|-------|
+| Complete | 1 | Customer site survey |
+| In Progress | 3 | Finalize equipment spec sheet, Build inline WPL quote, (spec awaiting torque data) |
+| Blocked | 1 | Order long-lead conveyor parts |
+| Not Started | 3 | Software integration scoping, Draft installation schedule, Customer training plan |
+
+## Key Accomplishments
+- Customer site survey complete with measurements confirmed (Dana).
+- Inline WPL quote in progress, pending finance pricing approval (Thomas).
+
+## Risks and Blockers
+- **Order long-lead conveyor parts (Marcus)** is *Blocked* by procurement. With an 8 week lead time this is the single biggest schedule risk and gates the installation schedule.
+- **Software integration scoping (Priya)** is *Not Started* and the customer ERP is unknown, creating scope and timeline uncertainty.
+- **Finalize equipment spec sheet (Thomas)** is waiting on motor torque numbers from engineering, holding up final sign off.
+
+## Recommended Next Actions
+- Escalate the held PO for conveyor parts with procurement today. **Owner: Marcus**
+- Get pricing approval from finance to release the WPL quote. **Owner: Thomas**
+- Schedule the ERP discovery call with the customer this week to unblock integration scoping. **Owner: Priya**
+- Chase engineering for torque numbers to close the spec sheet. **Owner: Thomas**
+- Draft a provisional install schedule keyed to the parts lead time. **Owner: Dana**`,
+
+  priority: `| Rank | Task | Owner | Priority | Reasoning |
+|------|------|-------|----------|-----------|
+| 1 | Order long-lead conveyor parts | Marcus | High | Blocked, 8 week lead time, and blocks the installation schedule. Every day lost slips the whole project. |
+| 2 | Build inline WPL quote | Thomas | High | Due in 2 days, only blocker is finance approval. Quick win that unblocks revenue. |
+| 3 | Finalize equipment spec sheet | Thomas | High | Due soon and required before final acceptance testing. Waiting on engineering. |
+| 4 | Software integration scoping call | Priya | Medium | Unknown ERP is a real risk, but resolvable with one discovery call. |
+| 5 | Draft installation schedule | Dana | Medium | Depends on parts arrival, so cannot finalize until the PO is released. |
+| 6 | Final acceptance test protocol | Thomas | Low | Needed before sign off but not until install is near. |
+| 7 | Customer training plan | Priya | Low | Low priority until the install date is confirmed. |
+
+### Focus this week
+The three things that move the project most: release the **conveyor parts PO** (it gates everything downstream), get finance to approve the **WPL quote** so it can go out, and close the **equipment spec sheet** by chasing the torque numbers.`,
+
+  timeline: `| Task | Owner | Original Due | Status | On Track? | Suggested Action |
+|------|-------|--------------|--------|-----------|------------------|
+| Order long-lead conveyor parts | Marcus | 2026-06-16 | Blocked | Late | Escalate held PO now. 8 week lead means parts land ~mid August. |
+| Build inline WPL quote | Thomas | 2026-06-19 | In Progress | At Risk | Get finance approval in next 24 hours to hold the date. |
+| Finalize equipment spec sheet | Thomas | 2026-06-20 | In Progress | At Risk | Chase engineering for torque numbers. |
+| Software integration scoping call | Priya | 2026-06-25 | Not Started | At Risk | Book ERP discovery call this week. |
+| Draft installation schedule | Dana | 2026-07-01 | Not Started | At Risk | Cannot finalize until parts ship date is known. |
+| Customer training plan | Priya | 2026-07-10 | Not Started | Yes | Hold until install confirmed. |
+| Final acceptance test protocol | Thomas | 2026-07-15 | Not Started | At Risk | Depends on install completion, which depends on parts. |
+
+### Overdue and dependency threats
+The **conveyor parts order is already past its due date and Blocked**. Because the installation schedule, acceptance testing, and training all sit downstream of parts arrival, this one late item cascades through the back half of the project.
+
+### Proposed revised sequence
+1. Release conveyor parts PO immediately (assume ~8 week lead, parts ~mid August).
+2. Run ERP discovery and finalize integration scope in parallel over the next 2 weeks.
+3. Rebuild the installation schedule around the confirmed parts ship date rather than the original 2026-07-01 target.
+4. Slot acceptance testing and customer training to follow the install, pushing final sign off to late August.`
+};
+
+function callDemo(mode){
+  return new Promise(resolve => setTimeout(() => resolve(DEMO_OUTPUTS[mode]), 900));
+}
+
+// ---------- API callers ----------
+async function callOpenAI(key, model, sys, user){
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({ model, messages: [{role:'system',content:sys},{role:'user',content:user}], temperature: 0.3 })
+  });
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error ? j.error.message : 'OpenAI request failed');
+  return j.choices[0].message.content;
+}
+async function callGemini(key, model, sys, user){
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: sys }] },
+      contents: [{ role: 'user', parts: [{ text: user }] }],
+      generationConfig: { temperature: 0.3 }
+    })
+  });
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error ? j.error.message : 'Gemini request failed');
+  return j.candidates[0].content.parts[0].text;
+}
+async function callAnthropic(key, model, sys, user){
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({ model, max_tokens: 2000, system: sys, messages: [{role:'user',content:user}] })
+  });
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error ? j.error.message : 'Anthropic request failed');
+  return j.content[0].text;
+}
+
+// ---------- Run ----------
+async function run(mode){
+  const data = document.getElementById('projectData').value.trim();
+  const ctx = document.getElementById('context').value.trim();
+  const out = document.getElementById('output');
+  if(store.provider !== 'demo' && !store.k){ openSettings(); return; }
+  if(!data){ out.innerHTML = '<div class="err">Add project data first, or click "Load sample project".</div>'; return; }
+
+  setButtons(true);
+  const titles = { status: 'Status Report', priority: 'Prioritized Task List', timeline: 'Timeline Update' };
+  out.innerHTML = `<h2>${titles[mode]}</h2><div><span class="spinner"></span> Helm is analyzing the project...</div>`;
+
+  const provider = store.provider;
+  const model = store.model || DEFAULT_MODELS[provider];
+  const sys = systemPrompt();
+  const user = taskPrompt(mode, data, ctx);
+
+  try {
+    let text;
+    if(provider === 'demo') text = await callDemo(mode);
+    else if(provider === 'openai') text = await callOpenAI(store.k, model, sys, user);
+    else if(provider === 'gemini') text = await callGemini(store.k, model, sys, user);
+    else text = await callAnthropic(store.k, model, sys, user);
+    out.innerHTML = `<h2>${titles[mode]}</h2><div class="render">${mdToHtml(text)}</div>`;
+  } catch(e){
+    out.innerHTML = `<h2>${titles[mode]}</h2><div class="err"><strong>Request failed:</strong> ${escapeHtml(e.message)}<br><br>Check your provider, model name, and API key in Settings.</div>`;
+  } finally {
+    setButtons(false);
+  }
+}
+
+function setButtons(disabled){
+  ['btn-status','btn-priority','btn-timeline'].forEach(id => document.getElementById(id).disabled = disabled);
+}
+
+// ---------- Tiny Markdown renderer ----------
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function mdToHtml(md){
+  const lines = md.split('\n');
+  let html = '', i = 0, inList = false, listType = '';
+  const closeList = () => { if(inList){ html += listType === 'ol' ? '</ol>' : '</ul>'; inList = false; } };
+  const inline = (t) => escapeHtml(t)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    .replace(/\b(High)\b/g, '<span class="badge b-high">High</span>')
+    .replace(/\b(Medium)\b/g, '<span class="badge b-med">Medium</span>')
+    .replace(/\b(Low)\b/g, '<span class="badge b-low">Low</span>')
+    .replace(/\b(At Risk|Late|Blocked|Overdue)\b/g, '<span class="badge b-high">$1</span>');
+
+  while(i < lines.length){
+    let line = lines[i];
+    // table block
+    if(/^\s*\|.*\|\s*$/.test(line) && i+1 < lines.length && /^\s*\|[-:\s|]+\|\s*$/.test(lines[i+1])){
+      closeList();
+      const header = line.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+      i += 2;
+      let rows = [];
+      while(i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])){
+        rows.push(lines[i].trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));
+        i++;
+      }
+      html += '<table><thead><tr>' + header.map(h=>`<th>${inline(h)}</th>`).join('') + '</tr></thead><tbody>';
+      html += rows.map(r=>'<tr>'+r.map(c=>`<td>${inline(c)}</td>`).join('')+'</tr>').join('');
+      html += '</tbody></table>';
+      continue;
+    }
+    let m;
+    if(m = line.match(/^###\s+(.*)/)){ closeList(); html += `<h3>${inline(m[1])}</h3>`; }
+    else if(m = line.match(/^##\s+(.*)/)){ closeList(); html += `<h2>${inline(m[1])}</h2>`; }
+    else if(m = line.match(/^#\s+(.*)/)){ closeList(); html += `<h2>${inline(m[1])}</h2>`; }
+    else if(m = line.match(/^\s*[-*]\s+(.*)/)){
+      if(!inList || listType !== 'ul'){ closeList(); html += '<ul>'; inList = true; listType = 'ul'; }
+      html += `<li>${inline(m[1])}</li>`;
+    }
+    else if(m = line.match(/^\s*\d+\.\s+(.*)/)){
+      if(!inList || listType !== 'ol'){ closeList(); html += '<ol>'; inList = true; listType = 'ol'; }
+      html += `<li>${inline(m[1])}</li>`;
+    }
+    else if(line.trim() === ''){ closeList(); }
+    else { closeList(); html += `<p>${inline(line)}</p>`; }
+    i++;
+  }
+  closeList();
+  return html;
+}
+
+// ---------- Settings + data ----------
+function openSettings(){
+  document.getElementById('provider').value = store.provider;
+  document.getElementById('model').value = store.model;
+  document.getElementById('apiKey').value = store.k;
+  syncModelPlaceholder();
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettings(){ document.getElementById('settingsModal').classList.remove('show'); }
+function syncModelPlaceholder(){
+  const p = document.getElementById('provider').value;
+  document.getElementById('model').placeholder = DEFAULT_MODELS[p];
+}
+function saveSettings(){
+  store.provider = document.getElementById('provider').value;
+  store.model = document.getElementById('model').value.trim();
+  store.k = document.getElementById('apiKey').value.trim();
+  closeSettings();
+  refreshKeyStatus();
+}
+function refreshKeyStatus(){
+  if(store.provider === 'demo'){
+    document.getElementById('keyDot').className = 'status-dot dot-on';
+    document.getElementById('keyLabel').textContent = 'Offline demo mode';
+    return;
+  }
+  const has = !!store.k;
+  document.getElementById('keyDot').className = 'status-dot ' + (has ? 'dot-on' : 'dot-off');
+  document.getElementById('keyLabel').textContent = has ? (store.provider + ' connected') : 'No API key';
+}
+function loadSample(){ document.getElementById('projectData').value = SAMPLE; saveData(); }
+function clearData(){ document.getElementById('projectData').value = ''; saveData(); }
+function saveData(){ store.data = document.getElementById('projectData').value; }
+
+// ---------- Init ----------
+document.getElementById('projectData').addEventListener('input', saveData);
+window.addEventListener('load', () => {
+  if(store.data) document.getElementById('projectData').value = store.data;
+  refreshKeyStatus();
+});
+</script>
+</body>
+</html>
