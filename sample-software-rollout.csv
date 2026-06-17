@@ -1,0 +1,10 @@
+Task, Owner, Status, Due Date, Notes
+Define Nexus integration requirements, Priya, Complete, 2026-05-28, Signed requirements doc with customer
+Build custom ERP API connector, Sam, In Progress, 2026-06-16, Behind schedule, auth tokens delayed by customer IT
+Map label format templates, Dana, In Progress, 2026-06-20, 12 of 18 formats done
+Set up staging environment, Sam, Complete, 2026-06-10, Mirror of customer plant config
+User acceptance test plan, Priya, Not Started, 2026-06-24, Cannot start until connector is live
+Data migration dry run, Sam, Blocked, 2026-06-19, Blocked by ERP connector, high risk to go live date
+Train plant supervisors on dashboard, Dana, Not Started, 2026-07-01, Half day session
+Go live cutover, Priya, Not Started, 2026-07-08, Hard deadline tied to customer quarter close
+Post go live support window, Sam, Not Started, 2026-07-15, Two weeks of on call coverage
