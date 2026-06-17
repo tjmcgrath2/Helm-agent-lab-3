@@ -55,10 +55,3 @@ Expected data format
 
 Helm works best with one task per line including task name, owner, status, due date, and notes. CSV with a header row or freeform text both work. The Load sample project button populates a realistic manufacturing project so you can demo immediately.
 
-Notes for the demo video
-
-
-Show the empty state, then Load sample project to make the data appear instantly.
-Run all three functions to show breadth.
-Point out that priority and timeline outputs use the current date, so the assistant reasons about what is overdue rather than relying on static text.
-Mention the design choice to keep it a single dependency free file so it stands alone and is trivially hostable, which is the main improvement over the earlier n8n and Pinecone lookup agent.
