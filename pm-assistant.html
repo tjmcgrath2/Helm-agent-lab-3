@@ -218,7 +218,27 @@ const store = {
   set data(v){ localStorage.setItem('helm_data', v); }
 };
 
-const DEFAULT_MODELS = { demo: 'built-in', openai: 'gpt-4o-mini', gemini: 'gemini-1.5-flash', anthropic: 'claude-3-5-sonnet-20241022' };
+const DEFAULT_MODELS = { demo: 'built-in', openai: 'gpt-4o-mini', gemini: 'gemini-2.5-flash', anthropic: 'claude-3-5-sonnet-20241022' };
+
+// Retry transient server overloads (503 / 429 / overloaded) with exponential backoff.
+function isTransient(msg){
+  return /overload|503|429|too busy|unavailable|rate limit|try again/i.test(msg || '');
+}
+async function withRetry(fn, attempts = 3){
+  let lastErr;
+  for(let i = 0; i < attempts; i++){
+    try { return await fn(); }
+    catch(e){
+      lastErr = e;
+      if(i < attempts - 1 && isTransient(e.message)){
+        await new Promise(r => setTimeout(r, 1200 * Math.pow(2, i))); // 1.2s, 2.4s
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
 
 // ---------- Sample data ----------
 const SAMPLE = `Task, Owner, Status, Due Date, Notes
@@ -394,12 +414,16 @@ async function run(mode){
   try {
     let text;
     if(provider === 'demo') text = await callDemo(mode);
-    else if(provider === 'openai') text = await callOpenAI(store.k, model, sys, user);
-    else if(provider === 'gemini') text = await callGemini(store.k, model, sys, user);
-    else text = await callAnthropic(store.k, model, sys, user);
+    else if(provider === 'openai') text = await withRetry(() => callOpenAI(store.k, model, sys, user));
+    else if(provider === 'gemini') text = await withRetry(() => callGemini(store.k, model, sys, user));
+    else text = await withRetry(() => callAnthropic(store.k, model, sys, user));
     out.innerHTML = `<h2>${titles[mode]}</h2><div class="render">${mdToHtml(text)}</div>`;
   } catch(e){
-    out.innerHTML = `<h2>${titles[mode]}</h2><div class="err"><strong>Request failed:</strong> ${escapeHtml(e.message)}<br><br>Check your provider, model name, and API key in Settings.</div>`;
+    const busy = isTransient(e.message);
+    const tip = busy
+      ? 'The model is temporarily overloaded on the provider side and did not recover after a few retries. Wait a minute and try again, switch to a different model in Settings, or use Offline Demo mode.'
+      : 'Check your provider, model name, and API key in Settings.';
+    out.innerHTML = `<h2>${titles[mode]}</h2><div class="err"><strong>Request failed:</strong> ${escapeHtml(e.message)}<br><br>${tip}</div>`;
   } finally {
     setButtons(false);
   }
