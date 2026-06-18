@@ -2,11 +2,8 @@
 
 Helm is a standalone, single file web app that acts as an AI project management assistant. Load your project tasks, and Helm performs three project management functions on demand: status reporting, task prioritization, and timeline updates.
 
-Built as a course project for an AI in project management lab. It improves on an earlier n8n and Pinecone lookup agent by being a self contained, dependency free product that runs in any browser with no server and no build step.
 
 ## Live demo
-
-**[Open the assistant](https://YOUR-USERNAME.github.io/REPO-NAME/pm-assistant.html)**
 
 The demo opens in Offline Demo mode, so you can click **Load sample project** and run all three functions immediately, no API key required.
 
@@ -22,14 +19,14 @@ Helm sends a system prompt plus a task specific prompt, built from your data, th
 
 ## Running it
 
-1. Open the [live demo](https://YOUR-USERNAME.github.io/REPO-NAME/pm-assistant.html), or download `pm-assistant.html` and double click it.
+1. Download `pm-assistant.html` and double click it.
 2. Click **Load sample project**, or paste your own task list (task name, owner, status, due date, and notes).
 3. Run **Status Report**, **Prioritize Tasks**, or **Timeline Update**. This works instantly in Offline Demo mode.
 4. For live AI on your own data, open **Settings**, choose a provider, paste your API key, and Save.
 
 ## Modes
 
-- **Offline Demo** (default): returns a realistic pre built analysis of the sample project with no key. Best for sharing and grading.
+- **Offline Demo** (default): returns a realistic pre built analysis of the sample project with no key. 
 - **Live**: runs the same functions against a real model on whatever data you provide.
 
 ## Supported providers (live mode)
